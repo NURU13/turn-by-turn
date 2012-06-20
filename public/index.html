@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      html { height: 100% }
+      body { height: 100%; margin: 0 }
+      #map { width: 100%; height: 100% }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <div id="out"></div>
+
+    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript">
+      function interpolate(path, t) {
+        var i, l
+
+        t *= google.maps.geometry.spherical.computeLength(path)
+
+        for(i = 1; i < path.length; i++) {
+          l = google.maps.geometry.spherical.computeDistanceBetween(path[i - 1], path[i])
+
+          if(t <= l)
+            return google.maps.geometry.spherical.interpolate(path[i - 1], path[i], t / l)
+
+          t -= l
+        }
+
+        return path[path.length - 1]
+      }
+
+      function extract(route, now, tripStep, maxTripLength) {
+        var out = [],
+            t = 0,
+            elapsed = 0,
+            i, leg, j, step, path
+
+        out.push({
+          position: route.legs[0].start_location,
+          time: now + elapsed
+        })
+
+        legs: for(i = 0; i !== route.legs.length; i++) {
+          leg = route.legs[i]
+
+          for(j = 0; j !== leg.steps.length; j++) {
+            step = leg.steps[j]
+            t += step.duration.value
+
+            if(t < tripStep)
+              continue
+
+            path = google.maps.geometry.encoding.decodePath(step.polyline.points)
+            while(t >= tripStep) {
+              elapsed += tripStep
+              t -= tripStep
+
+              out.push({
+                position: interpolate(path, 1 - t / step.duration.value),
+                time: now + elapsed
+              })
+
+              /* Early out if we've gone further than an hour. */
+              if(elapsed >= maxTripLength) {
+                t = 0
+                break legs
+              }
+            }
+          }
+        }
+
+        if(t > 0) {
+          elapsed += t
+          t = 0
+          out.push({
+            position: route.legs[route.legs.length - 1].end_location,
+            time: now + elapsed
+          })
+        }
+
+        return out
+      }
+
+      function json(url, callback) {
+        var req = new XMLHttpRequest()
+        req.open("GET", url, true)
+        req.onreadystatechange = function() {
+          if(req.readyState !== 4)
+            return
+
+          if(req.status !== 200)
+            return callback(new Error("Received a non-200 response from the server (" + req.status + ")."))
+
+          return callback(null, JSON.parse(req.responseText))
+        }
+        req.send(null)
+      }
+
+      function forecast(positions, callback) {
+        var url = ["/darksky/"],
+            i
+
+        for(i = 0; i !== positions.length; i++)
+          url.push(
+            positions[i].position.lat().toFixed(6), ",",
+            positions[i].position.lng().toFixed(6), ",",
+            positions[i].time, ";"
+          )
+
+        url.pop()
+
+        return json(url.join(""), function(err, res) {
+          if(err)
+            return callback(err)
+
+          var i = res.precipitation.length
+
+          while(i--) {
+            positions[i].probability = res.precipitation[i].probability
+            positions[i].intensity   = res.precipitation[i].intensity
+            positions[i].error       = res.precipitation[i].error
+            positions[i].type        = res.precipitation[i].type
+          }
+
+          return callback()
+        })
+      }
+
+      var map = new google.maps.Map(document.getElementById("map"), {
+            center: new google.maps.LatLng(42.7235, -73.6931),
+            zoom: 12,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+          }),
+          display = new google.maps.DirectionsRenderer(),
+          service = new google.maps.DirectionsService()
+
+      display.setMap(map)
+
+      service.route({
+        origin: "East Grand Forks, MN",
+        destination: "Chicago, IL",
+        travelMode: google.maps.TravelMode.DRIVING
+      }, function(result, status) {
+        if(status !== google.maps.DirectionsStatus.OK) {
+          alert("Poop. Google error.")
+          return
+        }
+
+        display.setDirections(result)
+
+        var positions = extract(result.routes[0], Math.floor(Date.now() / 1000), 60, 3600)
+
+        forecast(positions, function(err) {
+          if(err) {
+            alert("Sad panda, Dark Sky error: " + err.toString())
+            return
+          }
+
+          var i = positions.length,
+              p, k, color
+
+          while(i--) {
+            p = positions[i]
+            k = p.probability * p.intensity
+
+                 if(k <  2) color = "blue"
+            else if(k < 15) color = "green"
+            else if(k < 27) color = "yellow"
+            else if(k < 45) color = "orange"
+            else            color = "red"
+
+            p.marker = new google.maps.Marker({
+              clickable: false,
+              flat: true,
+              icon: "http://www.google.com/intl/en_us/mapfiles/ms/icons/" + color + "-dot.png",
+              map: map,
+              position: p.position
+            })
+          }
+        })
+      })
+    </script>
+  </body>
+</html>
