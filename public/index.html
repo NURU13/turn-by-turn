@@ -139,12 +139,17 @@
           if(w !== 0) {
             if(!region)
               region = {
+                start:     false,
+                end:       false,
                 intensity: 0,
-                data: []
+                data:      []
               }
 
             region.intensity = Math.max(region.intensity, w)
             region.data.push(positions[i])
+
+            if(i === 0) region.start = true
+            if(i === positions.length - 1) region.end = true
           }
 
           else if(region) {
@@ -168,9 +173,11 @@
         return regions
       }
 
-      function polygon(positions, projection) {
+      function polygon(map, region) {
         var m = 1 / 128,
             n = 1 / 8,
+            projection = map.getProjection(),
+            positions = region.data,
             points = [],
             i, w, a, b, c, dx, dy, k
 
@@ -186,6 +193,19 @@
           projection.fromPointToLatLng(new google.maps.Point(b.x - dy, b.y + dx)),
           projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
         )
+
+        if(region.start)
+          new google.maps.Polyline({
+            clickable: false,
+            strokeColor: "red",
+            strokeOpacity: 1,
+            strokeWeight: 4,
+            map: map,
+            path: [
+              projection.fromPointToLatLng(new google.maps.Point(b.x - dy, b.y + dx)),
+              projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
+            ]
+          })
 
         for(i = 1; i !== positions.length - 1; i++) {
           a   = projection.fromLatLngToPoint(positions[i - 1].position)
@@ -213,6 +233,19 @@
           projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
         )
 
+        if(region.end)
+          new google.maps.Polyline({
+            clickable: false,
+            strokeColor: "red",
+            strokeOpacity: 1,
+            strokeWeight: 4,
+            map: map,
+            path: [
+              projection.fromPointToLatLng(new google.maps.Point(b.x - dy, b.y + dx)),
+              projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
+            ]
+          })
+
         for(i = positions.length - 2; i !== 0; i--) {
           a   = projection.fromLatLngToPoint(positions[i + 1].position)
           b   = projection.fromLatLngToPoint(positions[i    ].position)
@@ -226,7 +259,14 @@
           points.push(projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx)))
         }
 
-        return points
+        new google.maps.Polygon({
+          clickable: false,
+          fillColor: "orange",
+          fillOpacity: 0.5,
+          strokeWeight: 0,
+          map: map,
+          paths: points
+        })
       }
 
       function draw(map, region) {
@@ -246,14 +286,7 @@
           title: message
         })
 
-        new google.maps.Polygon({
-          clickable: false,
-          fillColor: "orange",
-          fillOpacity: 0.5,
-          strokeWeight: 0,
-          map: map,
-          paths: polygon(region.data, map.getProjection())
-        })
+        polygon(map, region)
       }
 
       var map = new google.maps.Map(document.getElementById("map"), {
