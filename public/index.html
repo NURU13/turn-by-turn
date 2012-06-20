@@ -128,6 +128,43 @@
         })
       }
 
+      function polygon(positions, projection) {
+        var points = [],
+            i, w, a, b, c, dx, dy, k
+
+        points.push(positions[0].position)
+
+        for(i = 1; i !== positions.length - 1; i++) {
+          w   = Math.sqrt(positions[i].probability * positions[i].intensity / 75)
+          a   = projection.fromLatLngToPoint(positions[i - 1].position)
+          b   = projection.fromLatLngToPoint(positions[i    ].position)
+          c   = projection.fromLatLngToPoint(positions[i + 1].position)
+          dx  = c.x - a.x
+          dy  = c.y - a.y
+          k   = w / (8 * Math.sqrt(dx * dx + dy * dy))
+          dx *= k
+          dy *= k
+          points.push(projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx)))
+        }
+
+        points.push(positions[positions.length - 1].position)
+
+        for(i = positions.length - 2; i !== 0; i--) {
+          w   = Math.sqrt(positions[i].probability * positions[i].intensity / 75)
+          a   = projection.fromLatLngToPoint(positions[i + 1].position)
+          b   = projection.fromLatLngToPoint(positions[i    ].position)
+          c   = projection.fromLatLngToPoint(positions[i - 1].position)
+          dx  = c.x - a.x
+          dy  = c.y - a.y
+          k   = w / (8 * Math.sqrt(dx * dx + dy * dy))
+          dx *= k
+          dy *= k
+          points.push(projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx)))
+        }
+
+        return points
+      }
+
       var map = new google.maps.Map(document.getElementById("map"), {
             center: new google.maps.LatLng(42.7235, -73.6931),
             zoom: 12,
@@ -139,8 +176,8 @@
       display.setMap(map)
 
       service.route({
-        origin: "East Grand Forks, MN",
-        destination: "Chicago, IL",
+        origin: "Pine City, MN",
+        destination: "Minnetonka, MN",
         travelMode: google.maps.TravelMode.DRIVING
       }, function(result, status) {
         if(status !== google.maps.DirectionsStatus.OK) {
@@ -158,6 +195,15 @@
             return
           }
 
+          new google.maps.Polygon({
+            clickable: false,
+            fillOpacity: 1,
+            strokeWeight: 0,
+            map: map,
+            paths: polygon(positions, map.getProjection())
+          })
+
+/*
           var i = positions.length,
               p, k, color
 
@@ -179,6 +225,7 @@
               position: p.position
             })
           }
+*/
         })
       })
     </script>
