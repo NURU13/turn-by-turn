@@ -55,18 +55,18 @@
             path = google.maps.geometry.encoding.decodePath(step.polyline.points)
             while(t >= tripStep) {
               elapsed += tripStep
+              /* Early out if we've gone further than an hour. */
+              if(elapsed >= maxTripLength) {
+                t = 0
+                break legs
+              }
+
               t -= tripStep
 
               out.push({
                 position: interpolate(path, 1 - t / step.duration.value),
                 time: now + elapsed
               })
-
-              /* Early out if we've gone further than an hour. */
-              if(elapsed >= maxTripLength) {
-                t = 0
-                break legs
-              }
             }
           }
         }
@@ -128,41 +128,132 @@
         })
       }
 
+      function divide(positions) {
+        var regions = [],
+            region = null,
+            i, w, j
+
+        for(i = 0; i !== positions.length; i++) {
+          w = positions[i].probability * positions[i].intensity
+
+          if(w !== 0) {
+            if(!region)
+              region = {
+                intensity: 0,
+                data: []
+              }
+
+            region.intensity = Math.max(region.intensity, w)
+            region.data.push(positions[i])
+          }
+
+          else if(region) {
+            regions.push(region)
+            region = null
+          }
+        }
+
+        if(region) {
+          regions.push(region)
+          region = null
+        }
+
+        /* Strip out regions that are too short or small to matter
+         * significantly. */
+        i = regions.length
+        while(i--)
+          if(regions[i].length < 5 || regions[i].intensity < 2)
+            regions.splice(i, 1)
+
+        return regions
+      }
+
       function polygon(positions, projection) {
-        var points = [],
+        var m = 1 / 128,
+            n = 1 / 8,
+            points = [],
             i, w, a, b, c, dx, dy, k
 
-        points.push(positions[0].position)
+        b   = projection.fromLatLngToPoint(positions[0].position)
+        c   = projection.fromLatLngToPoint(positions[1].position)
+        dx  = c.x - b.x
+        dy  = c.y - b.y
+        w   = m + positions[0].probability * positions[0].intensity * n / 75
+        k   = w / Math.sqrt(dx * dx + dy * dy)
+        dx *= k
+        dy *= k
+        points.push(
+          projection.fromPointToLatLng(new google.maps.Point(b.x - dy, b.y + dx)),
+          projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
+        )
 
         for(i = 1; i !== positions.length - 1; i++) {
-          w   = Math.sqrt(positions[i].probability * positions[i].intensity / 75)
           a   = projection.fromLatLngToPoint(positions[i - 1].position)
           b   = projection.fromLatLngToPoint(positions[i    ].position)
           c   = projection.fromLatLngToPoint(positions[i + 1].position)
           dx  = c.x - a.x
           dy  = c.y - a.y
-          k   = w / (8 * Math.sqrt(dx * dx + dy * dy))
+          w   = m + positions[i].probability * positions[i].intensity * n / 75
+          k   = w / Math.sqrt(dx * dx + dy * dy)
           dx *= k
           dy *= k
           points.push(projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx)))
         }
 
-        points.push(positions[positions.length - 1].position)
+        b   = projection.fromLatLngToPoint(positions[positions.length - 1].position)
+        c   = projection.fromLatLngToPoint(positions[positions.length - 2].position)
+        dx  = c.x - b.x
+        dy  = c.y - b.y
+        w   = m + positions[positions.length - 1].probability * positions[positions.length - 1].intensity * n / 75
+        k   = w / Math.sqrt(dx * dx + dy * dy)
+        dx *= k
+        dy *= k
+        points.push(
+          projection.fromPointToLatLng(new google.maps.Point(b.x - dy, b.y + dx)),
+          projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
+        )
 
         for(i = positions.length - 2; i !== 0; i--) {
-          w   = Math.sqrt(positions[i].probability * positions[i].intensity / 75)
           a   = projection.fromLatLngToPoint(positions[i + 1].position)
           b   = projection.fromLatLngToPoint(positions[i    ].position)
           c   = projection.fromLatLngToPoint(positions[i - 1].position)
           dx  = c.x - a.x
           dy  = c.y - a.y
-          k   = w / (8 * Math.sqrt(dx * dx + dy * dy))
+          w   = m + positions[i].probability * positions[i].intensity * n / 75
+          k   = w / Math.sqrt(dx * dx + dy * dy)
           dx *= k
           dy *= k
           points.push(projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx)))
         }
 
         return points
+      }
+
+      function draw(map, region) {
+        var i = region.data.length,
+            message = []
+
+             if(region.intensity <  15) message.push("sporadic light")
+        else if(region.intensity <  27) message.push("light")
+        else if(region.intensity >= 45) message.push("heavy")
+
+        message.push(region.data[0].type, "for", region.data.length, "minutes")
+        message = message.join(" ")
+
+        new google.maps.Marker({
+          map: map,
+          position: region.data[Math.floor(region.data.length * 0.5)].position,
+          title: message
+        })
+
+        new google.maps.Polygon({
+          clickable: false,
+          fillColor: "orange",
+          fillOpacity: 0.5,
+          strokeWeight: 0,
+          map: map,
+          paths: polygon(region.data, map.getProjection())
+        })
       }
 
       var map = new google.maps.Map(document.getElementById("map"), {
@@ -176,8 +267,8 @@
       display.setMap(map)
 
       service.route({
-        origin: "Pine City, MN",
-        destination: "Minnetonka, MN",
+        origin: "Yankton, SD",
+        destination: "Sioux Falls, SD",
         travelMode: google.maps.TravelMode.DRIVING
       }, function(result, status) {
         if(status !== google.maps.DirectionsStatus.OK) {
@@ -191,41 +282,15 @@
 
         forecast(positions, function(err) {
           if(err) {
-            alert("Sad panda, Dark Sky error: " + err.toString())
+            alert("Sad panda, Dark Sky error: " + err.message)
             return
           }
 
-          new google.maps.Polygon({
-            clickable: false,
-            fillOpacity: 1,
-            strokeWeight: 0,
-            map: map,
-            paths: polygon(positions, map.getProjection())
-          })
+          var regions = divide(positions),
+              i = regions.length
 
-/*
-          var i = positions.length,
-              p, k, color
-
-          while(i--) {
-            p = positions[i]
-            k = p.probability * p.intensity
-
-                 if(k <  2) color = "blue"
-            else if(k < 15) color = "green"
-            else if(k < 27) color = "yellow"
-            else if(k < 45) color = "orange"
-            else            color = "red"
-
-            p.marker = new google.maps.Marker({
-              clickable: false,
-              flat: true,
-              icon: "http://www.google.com/intl/en_us/mapfiles/ms/icons/" + color + "-dot.png",
-              map: map,
-              position: p.position
-            })
-          }
-*/
+          while(i--)
+            draw(map, regions[i])
         })
       })
     </script>
