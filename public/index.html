@@ -195,170 +195,48 @@
         })
       }
 
-      function divide(positions) {
-        var regions = [],
-            region = null,
-            i, w, j
+      function marker(map, point, c, i, type) {
+        if(i < 2 || i > 57)
+          return
 
-        for(i = 0; i !== positions.length; i++) {
-          w = positions[i].probability * positions[i].intensity
+        var message = []
 
-          if(w !== 0) {
-            if(!region)
-              region = {
-                start:     false,
-                end:       false,
-                intensity: 0,
-                data:      []
-              }
-
-            region.intensity = Math.max(region.intensity, w)
-            region.data.push(positions[i])
-
-            if(i === 0) region.start = true
-            if(i === positions.length - 1) region.end = true
-          }
-
-          else if(region) {
-            regions.push(region)
-            region = null
-          }
+        switch(c) {
+          case 0: message.push(type, "stopping"); break
+          case 1: message.push("sporadic light", type); break
+          case 2: message.push("light", type); break
+          case 3: message.push("moderate", type); break
+          case 4: message.push("heavy", type); break
         }
 
-        if(region) {
-          regions.push(region)
-          region = null
-        }
-
-        /* Strip out regions that are too short or small to matter
-         * significantly. */
-        i = regions.length
-        while(i--)
-          if(regions[i].length < 5 || regions[i].intensity < 2)
-            regions.splice(i, 1)
-
-        return regions
-      }
-
-      function polygon(map, region) {
-        var m = 1 / 128,
-            n = 1 / 8,
-            projection = map.getProjection(),
-            positions = region.data,
-            points = [],
-            i, w, a, b, c, dx, dy, k
-
-        b   = projection.fromLatLngToPoint(positions[0].position)
-        c   = projection.fromLatLngToPoint(positions[1].position)
-        dx  = c.x - b.x
-        dy  = c.y - b.y
-        w   = m + positions[0].probability * positions[0].intensity * n / 75
-        k   = w / Math.sqrt(dx * dx + dy * dy)
-        dx *= k
-        dy *= k
-        points.push(
-          projection.fromPointToLatLng(new google.maps.Point(b.x - dy, b.y + dx)),
-          projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
-        )
-
-        if(region.start)
-          overlays.push(new google.maps.Polyline({
-            clickable: false,
-            strokeColor: "red",
-            strokeOpacity: 1,
-            strokeWeight: 4,
-            map: map,
-            path: [
-              projection.fromPointToLatLng(new google.maps.Point(b.x - dy, b.y + dx)),
-              projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
-            ],
-            zIndex: 2
-          }))
-
-        for(i = 1; i !== positions.length - 1; i++) {
-          a   = projection.fromLatLngToPoint(positions[i - 1].position)
-          b   = projection.fromLatLngToPoint(positions[i    ].position)
-          c   = projection.fromLatLngToPoint(positions[i + 1].position)
-          dx  = c.x - a.x
-          dy  = c.y - a.y
-          w   = m + positions[i].probability * positions[i].intensity * n / 75
-          k   = w / Math.sqrt(dx * dx + dy * dy)
-          dx *= k
-          dy *= k
-          points.push(projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx)))
-        }
-
-        b   = projection.fromLatLngToPoint(positions[positions.length - 1].position)
-        c   = projection.fromLatLngToPoint(positions[positions.length - 2].position)
-        dx  = c.x - b.x
-        dy  = c.y - b.y
-        w   = m + positions[positions.length - 1].probability * positions[positions.length - 1].intensity * n / 75
-        k   = w / Math.sqrt(dx * dx + dy * dy)
-        dx *= k
-        dy *= k
-        points.push(
-          projection.fromPointToLatLng(new google.maps.Point(b.x - dy, b.y + dx)),
-          projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
-        )
-
-        if(region.end)
-          overlays.push(new google.maps.Polyline({
-            clickable: false,
-            strokeColor: "red",
-            strokeOpacity: 1,
-            strokeWeight: 4,
-            map: map,
-            path: [
-              projection.fromPointToLatLng(new google.maps.Point(b.x - dy, b.y + dx)),
-              projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx))
-            ],
-            zIndex: 3
-          }))
-
-        for(i = positions.length - 2; i !== 0; i--) {
-          a   = projection.fromLatLngToPoint(positions[i + 1].position)
-          b   = projection.fromLatLngToPoint(positions[i    ].position)
-          c   = projection.fromLatLngToPoint(positions[i - 1].position)
-          dx  = c.x - a.x
-          dy  = c.y - a.y
-          w   = m + positions[i].probability * positions[i].intensity * n / 75
-          k   = w / Math.sqrt(dx * dx + dy * dy)
-          dx *= k
-          dy *= k
-          points.push(projection.fromPointToLatLng(new google.maps.Point(b.x + dy, b.y - dx)))
-        }
-
-        overlays.push(new google.maps.Polygon({
-          clickable: false,
-          fillColor: "orange",
-          fillOpacity: 0.5,
-          strokeWeight: 0,
-          map: map,
-          paths: points,
-          zIndex: 1
-        }))
-      }
-
-      function draw(map, region) {
-        var i = region.data.length,
-            message = []
-
-             if(region.intensity <  15) message.push("sporadic light")
-        else if(region.intensity <  27) message.push("light")
-        else if(region.intensity >= 45) message.push("heavy")
-
-        message.push(region.data[0].type, "for")
-        if(region.end) message.push("at least")
-        message.push(region.data.length, "minutes")
-        message = message.join(" ")
+        message.push("in", i, "minutes")
 
         overlays.push(new google.maps.Marker({
           map: map,
-          position: region.data[Math.floor(region.data.length * 0.5)].position,
-          title: message
+          position: point,
+          title: message.join(" ")
         }))
+      }
 
-        polygon(map, region)
+      function polyline(map, path, c) {
+        var color
+
+        switch(c) {
+          case 0: return
+          case 1: color = "#FE0"; break
+          case 2: color = "#FA0"; break
+          case 3: color = "#F50"; break
+          case 4: color = "#F00"; break
+        }
+
+        overlays.push(new google.maps.Polyline({
+          map: map,
+          path: path,
+          strokeColor: color,
+          strokeOpacity: 0.667,
+          strokeWeight: 24,
+          zIndex: c
+        }))
       }
 
       function directions() {
@@ -394,11 +272,37 @@
               return
             }
 
-            var regions = divide(positions),
-                i = regions.length
+            var path = [],
+                pc = 0,
+                i, w, c
 
-            while(i--)
-              draw(map, regions[i])
+            for(i = 0; i !== positions.length; i++) {
+              w = positions[i].probability * positions[i].intensity
+                   if(w <  2) c = 0
+              else if(w < 15) c = 1
+              else if(w < 27) c = 2
+              else if(w < 45) c = 3
+              else            c = 4
+
+              if(c !== pc) {
+                path.push(positions[i].position)
+                marker(map, positions[i].position, c, i, positions[i].type)
+                polyline(map, path, pc)
+                path = []
+                pc = c
+              }
+
+              path.push(positions[i].position)
+            }
+
+            if(i === 60)
+              overlays.push(new google.maps.Marker({
+                map: map,
+                position: positions[positions.length - 1].position,
+                title: "forecast ends after 60 minutes"
+              }))
+
+            polyline(map, path, pc)
           })
         })
       }
