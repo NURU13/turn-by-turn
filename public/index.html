@@ -26,6 +26,15 @@
         background: white;
         border: 1px solid gray;
         box-shadow: 0em 0.125em 0.25em gray;
+        width: 18em;
+      }
+
+      form p {
+        margin: 0 0 1em;
+      }
+
+      form table {
+        margin: 1em 0 0;
       }
 
       th {
@@ -39,6 +48,8 @@
     <div id="map"></div>
     <div id="out"></div>
     <form id="form" onsubmit="try{directions()}catch(e){}; return false">
+      <p>Request directions from <a href="http://maps.google.com/" target="_blank">Google Maps</a>: they will be overlaid with a forecast from <a href="http://darkskyapp.com/" target="_blank">Dark Sky</a>, showing where (and how hard) you&rsquo;ll get rained on if you left right now.</p>
+
       <table>
         <tr>
           <th>I want to</th>
@@ -53,12 +64,12 @@
 
         <tr>
           <th>from</th>
-          <td><input name="from" value="1 Washington Pl., Troy, NY"></td>
+          <td><input name="from" value="216 Second Street, Troy, NY"></td>
         </tr>
 
         <tr>
           <th>to</th>
-          <td><input name="to" value="Browns Brewing Company, Troy, NY"></td>
+          <td><input name="to" value="417 River Street, Troy, NY"></td>
         </tr>
 
         <tr>
@@ -336,7 +347,9 @@
         else if(region.intensity <  27) message.push("light")
         else if(region.intensity >= 45) message.push("heavy")
 
-        message.push(region.data[0].type, "for", region.data.length, "minutes")
+        message.push(region.data[0].type, "for")
+        if(region.end) message.push("at least")
+        message.push(region.data.length, "minutes")
         message = message.join(" ")
 
         overlays.push(new google.maps.Marker({
@@ -364,7 +377,7 @@
           travelMode: mode
         }, function(result, status) {
           if(status !== google.maps.DirectionsStatus.OK) {
-            alert("Poop. Google error.")
+            alert("I couldn't get directions from Google. Try again!")
             return
           }
 
@@ -377,7 +390,7 @@
 
           forecast(positions, function(err) {
             if(err) {
-              alert("Sad panda, Dark Sky error: " + err.message)
+              alert("I couldn't get a forecast from Dark Sky. Try again!")
               return
             }
 
@@ -402,6 +415,8 @@
           }),
           service = new google.maps.DirectionsService(),
           overlays = []
+
+      directions()
     </script>
   </body>
 </html>
