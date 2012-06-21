@@ -195,48 +195,50 @@
         })
       }
 
-      function marker(map, point, c, i, type) {
-        if(i < 2 || i > 57)
-          return
-
-        var message = []
-
-        switch(c) {
-          case 0: message.push(type, "stopping"); break
-          case 1: message.push("sporadic light", type); break
-          case 2: message.push("light", type); break
-          case 3: message.push("moderate", type); break
-          case 4: message.push("heavy", type); break
-        }
-
-        message.push("in", i, "minutes")
-
-        overlays.push(new google.maps.Marker({
-          map: map,
-          position: point,
-          title: message.join(" ")
-        }))
-      }
-
-      function polyline(map, path, c) {
-        var color
+      /* FIXME: infowindows are crap. make our own tooltips that don't suck so
+       * bad. */
+      function polyline(map, start, path, c, type, end) {
+        var message = [],
+            color
 
         switch(c) {
           case 0: return
-          case 1: color = "#FE0"; break
-          case 2: color = "#FA0"; break
-          case 3: color = "#F50"; break
-          case 4: color = "#F00"; break
+          case 1: message.push("Possible light ", type); color = "#FE0"; break
+          case 2: message.push("Light ", type); color = "#FA0"; break
+          case 3: message.push("Moderate ", type); color = "#F50"; break
+          case 4: message.push("Heavy ", type); color = "#F00"; break
         }
 
-        overlays.push(new google.maps.Polyline({
-          map: map,
-          path: path,
-          strokeColor: color,
-          strokeOpacity: 0.667,
-          strokeWeight: 24,
-          zIndex: c
-        }))
+        if(end)
+          message.push(" ", start, " minutes from now.")
+
+        else
+          message.push(" ", start, "&ndash;", start + path.length - 1, " minutes from now.")
+
+        var polyline = new google.maps.Polyline({
+              map: map,
+              path: path,
+              strokeColor: color,
+              strokeOpacity: 0.667,
+              strokeWeight: 24,
+              zIndex: c
+            }),
+            infowindow = new google.maps.InfoWindow({
+              content: message.join(""),
+              disableAutoPan: true,
+              position: path[Math.floor(path.length * 0.5)],
+              maxWidth: 96
+            })
+
+        google.maps.event.addListener(polyline, "mouseover", function() {
+          infowindow.open(map)
+        })
+
+        google.maps.event.addListener(polyline, "mouseout", function() {
+          infowindow.close()
+        })
+
+        overlays.push(polyline)
       }
 
       function directions() {
@@ -276,6 +278,9 @@
                 pc = 0,
                 i, w, c
 
+            /* FIXME: this mechanism chokes on short breaks (of 1 minute or
+             * so); we would do well to adapt the merge algorithm from the API
+             * to cull periods shorter than 5 minutes or so */
             for(i = 0; i !== positions.length; i++) {
               w = positions[i].probability * positions[i].intensity
                    if(w <  2) c = 0
@@ -286,8 +291,7 @@
 
               if(c !== pc) {
                 path.push(positions[i].position)
-                marker(map, positions[i].position, c, i, positions[i].type)
-                polyline(map, path, pc)
+                polyline(map, i + 1 - path.length, path, pc, positions[i].type, false)
                 path = []
                 pc = c
               }
@@ -299,10 +303,10 @@
               overlays.push(new google.maps.Marker({
                 map: map,
                 position: positions[positions.length - 1].position,
-                title: "forecast ends after 60 minutes"
+                title: "end of forecast"
               }))
 
-            polyline(map, path, pc)
+            polyline(map, positions.length - path.length, path, pc, positions[positions.length - 1].type, true)
           })
         })
       }
