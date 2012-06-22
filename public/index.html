@@ -7,40 +7,88 @@
       }
 
       body {
-        font: 75%/1.5em "Helvetica", "Arial", sans-serif;
+        font: 75%/1.5em "Futura", "Helvetica", "Arial", sans-serif;
         height: 100%;
         margin: 0;
+        background-color: rgb(244, 243, 240);
+        font-weight: 300;
+        }
+      
+      a {
+        color: rgb(50, 100, 200);
+        text-decoration: none;
       }
 
       #map {
         position: absolute;
-        width: 100%;
-        height: 100%;
-      }
-
-      form {
-        position: fixed;
-        top: 5px;
-        right: 5px;
-        padding: 1.5em;
-        background: white;
-        border: 1px solid gray;
-        box-shadow: 0em 0.125em 0.25em gray;
-        width: 18em;
-      }
-
+        top:  0;
+        right: 0;
+        bottom: 0;
+        left: 333px;
+        }
+      
+      #sidebar {
+        position: absolute;
+        top:  0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 333px;
+        font-size: 14px;
+        box-shadow: 2px 2px 25px rgba(0,0,0, 0.5);
+        }
+      
+      #sidebar > .inner {
+        margin: 20px;
+        }
+      
+      #logo {
+        width: 292px;
+        height: 112px;
+        margin: 0 0 10px -5px;
+        }
+      
+      #key {
+        position: absolute;
+        display: block;
+        width: 145px;
+        height: 108px;
+        top: 0;
+        right: 0;
+        background-color: rgba(255, 255, 255, 0.75);
+        box-shadow: -2px 2px 15px rgba(0,0,0, 0.35);
+        }
+      #key img {
+        display: inline-block;
+        margin: 6px;
+        }
+      
+      #sidebar > .inner > p {
+        font-size: 16px;
+        line-height: 1.4em;
+        margin-bottom: 20px;
+        }
+      
+      #sidebar form {
+        font-size: 16px;
+        }
+      
       form p {
         margin: 0 0 1em;
-      }
+        }
 
       form table {
         margin: 1em 0 0;
-      }
+        }
+      
+      form .input {
+        width: 180px;
+        }
 
       th {
         font-weight: normal;
         text-align: right;
-      }
+        }
 
       div#tooltip {
         position: fixed;
@@ -52,7 +100,12 @@
         box-shadow: 0em 0.125em 0.25em gray;
         white-space: nowrap;
         visibility: hidden;
-      }
+        }
+      
+      hr {
+        opacity: 0.5;
+        margin: 10px 0;
+        }
     </style>
   </head>
 
@@ -60,38 +113,50 @@
     <div id="map"></div>
     <div id="out"></div>
     <div id="tooltip"></div>
-
-    <form id="form" onsubmit="try{directions()}catch(e){}; return false">
-      <p>Request directions from <a href="http://maps.google.com/" target="_blank">Google Maps</a>: they will be overlaid with a 60-minute forecast from <a href="http://darkskyapp.com/" target="_blank">Dark Sky</a>, showing where (and how hard) you&rsquo;ll get rained on if you left right now.</p>
-
-      <table>
-        <tr>
-          <th>I want to</th>
-          <td>
-            <select name="mode">
-              <option>walk</option>
-              <option>bike</option>
-              <option>drive</option>
-            </select>
-          </td>
-        </tr>
-
-        <tr>
-          <th>from</th>
-          <td><input name="from" value="216 Second Street, Troy, NY"></td>
-        </tr>
-
-        <tr>
-          <th>to</th>
-          <td><input name="to" value="417 River Street, Troy, NY"></td>
-        </tr>
-
-        <tr>
-          <th></th>
-          <td><input type="submit" value="Go!"></td>
-        </tr>
-      </table>
-    </form>
+    
+    <div id="key">
+      <img src="key.png" />
+    </div>
+    
+    <div id="sidebar">
+      <div class="inner">
+        <img id="logo" src="logo.png" />
+        
+        <p>Request directions from <a href="http://maps.google.com/" target="_blank">Google Maps</a>, and they will be overlaid with a 60-minute forecast from <a href="http://darkskyapp.com/" target="_blank">Dark Sky</a>, showing where (and how hard) you&rsquo;ll get rained on if you left right now.</p>
+        
+        <hr/>
+        
+        <form id="form" onsubmit="try{directions()}catch(e){}; return false">  
+          <table>
+            <tr>
+              <th nowrap="nowrap">I want to</th>
+              <td>
+                <select name="mode">
+                  <option>drive</option>
+                  <option>walk</option>
+                  <option>bike</option>
+                </select>
+              </td>
+            </tr>
+    
+            <tr>
+              <th nowrap="nowrap">from</th>
+              <td><input class="input" name="from" value="216 Second Street, Troy, NY"></td>
+            </tr>
+    
+            <tr>
+              <th nowrap="nowrap">to</th>
+              <td><input class="input"  name="to" value="417 River Street, Troy, NY"></td>
+            </tr>
+    
+            <tr>
+              <th></th>
+              <td><input type="submit" value="Go!"></td>
+            </tr>
+          </table>
+        </form>
+      </div>
+    </div>
 
     <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
     <script type="text/javascript">
