@@ -13,7 +13,16 @@ app.use(express.logger())
 app.use(app.router)
 app.use(express.static(path.join(__dirname, "public")))
 
-app.get("/darksky/:locations", function(req, res) {
+app.get("/darksky/interesting", function(res, res) {
+  request(
+    util.format(
+      "https://api.darkskyapp.com/v1/interesting/%s",
+      key
+    )
+  ).pipe(res)
+})
+
+app.get("/darksky/precipitation/:locations", function(req, res) {
   request(
     util.format(
       "https://api.darkskyapp.com/v1/precipitation/%s/%s",

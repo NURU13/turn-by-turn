@@ -247,7 +247,7 @@
       }
 
       function forecast(positions, callback) {
-        var url = ["/darksky/"],
+        var url = ["/darksky/precipitation/"],
             i
 
         for(i = 0; i !== positions.length; i++)
@@ -331,8 +331,7 @@
       }
 
       function directions() {
-        var form = document.getElementById("form"),
-            mode
+        var mode
 
         switch(form.mode.value) {
           case "walk": mode = google.maps.TravelMode.WALKING; break
@@ -400,7 +399,28 @@
         })
       }
 
-      var map = new google.maps.Map(document.getElementById("map"), {
+      function random(callback) {
+        return json("/darksky/interesting", function(err, res) {
+          if(err)
+            return callback(err)
+
+          var storm = res.storms[0],
+              center = new google.maps.LatLng(res.storms[0].latitude, res.storms[0].longitude),
+              angle = Math.random() * 360,
+              a = google.maps.geometry.spherical.computeOffset(center, 32768, angle),
+              b = google.maps.geometry.spherical.computeOffset(center, 32768, angle + 180)
+
+          form.mode.options[0].selected = true
+          form.from.value = a.lat().toFixed(3) + ", " + a.lng().toFixed(3)
+          form.to.value   = b.lat().toFixed(3) + ", " + b.lng().toFixed(3)
+
+          return callback(null)
+        })
+      }
+
+      var form = document.getElementById("form"),
+          tooltip = document.getElementById("tooltip"),
+          map = new google.maps.Map(document.getElementById("map"), {
             center: new google.maps.LatLng(42.7235, -73.6931),
             zoom: 12,
             mapTypeControl: false,
@@ -411,7 +431,6 @@
             map: map
           }),
           service = new google.maps.DirectionsService(),
-          tooltip = document.getElementById("tooltip"),
           overlays = []
 
       window.onmousemove = function(e) {
@@ -419,7 +438,7 @@
         tooltip.style.top  = e.pageY + "px"
       }
 
-      directions()
+      random(directions)
     </script>
   </body>
 </html>
