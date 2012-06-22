@@ -41,12 +41,26 @@
         font-weight: normal;
         text-align: right;
       }
+
+      div#tooltip {
+        position: fixed;
+        margin-left: 14px;
+        margin-top: 8px;
+        padding: 0.25em 0.5em;
+        border: 1px solid gray;
+        background: white;
+        box-shadow: 0em 0.125em 0.25em gray;
+        white-space: nowrap;
+        visibility: hidden;
+      }
     </style>
   </head>
 
   <body>
     <div id="map"></div>
     <div id="out"></div>
+    <div id="tooltip"></div>
+
     <form id="form" onsubmit="try{directions()}catch(e){}; return false">
       <p>Request directions from <a href="http://maps.google.com/" target="_blank">Google Maps</a>: they will be overlaid with a forecast from <a href="http://darkskyapp.com/" target="_blank">Dark Sky</a>, showing where (and how hard) you&rsquo;ll get rained on if you left right now.</p>
 
@@ -204,12 +218,12 @@
         switch(w) {
           case 0: return
           case 1: 
-            color = "#FE0"
             switch(type) {
               case "rain" : message.push("Sprinkling "); break
               case "sleet": message.push("Very light sleet "); break
               case "snow" : message.push("Dusting "); break
             }
+            color = "#FE0"
             break
           case 2: message.push("Light ", type); color = "#FA0"; break
           case 3: message.push("Moderate ", type); color = "#F50"; break
@@ -228,6 +242,8 @@
         else
           message.push(" ", start, "&ndash;", start + path.length - 1, " minutes from now.")
 
+        message = message.join("")
+
         var polyline = new google.maps.Polyline({
               map: map,
               path: path,
@@ -235,20 +251,15 @@
               strokeOpacity: 0.667,
               strokeWeight: 24,
               zIndex: w
-            }),
-            infowindow = new google.maps.InfoWindow({
-              content: message.join(""),
-              disableAutoPan: true,
-              position: path[Math.floor(path.length * 0.5)],
-              maxWidth: 96
             })
 
         google.maps.event.addListener(polyline, "mouseover", function() {
-          infowindow.open(map)
+          tooltip.innerHTML = message
+          tooltip.style.visibility = "visible"
         })
 
         google.maps.event.addListener(polyline, "mouseout", function() {
-          infowindow.close()
+          tooltip.style.visibility = "hidden"
         })
 
         overlays.push(polyline)
@@ -335,7 +346,13 @@
             map: map
           }),
           service = new google.maps.DirectionsService(),
+          tooltip = document.getElementById("tooltip"),
           overlays = []
+
+      window.onmousemove = function(e) {
+        tooltip.style.left = e.pageX + "px"
+        tooltip.style.top  = e.pageY + "px"
+      }
 
       directions()
     </script>
