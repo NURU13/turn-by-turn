@@ -197,19 +197,32 @@
 
       /* FIXME: infowindows are crap. make our own tooltips that don't suck so
        * bad. */
-      function polyline(map, start, path, c, type, end) {
+      function polyline(map, start, path, w, type, end) {
         var message = [],
             color
 
-        switch(c) {
+        switch(w) {
           case 0: return
-          case 1: message.push("Possible light ", type); color = "#FE0"; break
+          case 1: 
+            color = "#FE0"
+            switch(type) {
+              case "rain" : message.push("Sprinkling "); break
+              case "sleet": message.push("Very light sleet "); break
+              case "snow" : message.push("Dusting "); break
+            }
+            break
           case 2: message.push("Light ", type); color = "#FA0"; break
           case 3: message.push("Moderate ", type); color = "#F50"; break
           case 4: message.push("Heavy ", type); color = "#F00"; break
         }
 
-        if(end)
+        if(start === 0 && end)
+          message.push(".")
+
+        else if(start === 0)
+          message.push(" until ", start + path.length - 1, " minutes from now.")
+
+        else if(end)
           message.push(" ", start, " minutes from now.")
 
         else
@@ -221,7 +234,7 @@
               strokeColor: color,
               strokeOpacity: 0.667,
               strokeWeight: 24,
-              zIndex: c
+              zIndex: w
             }),
             infowindow = new google.maps.InfoWindow({
               content: message.join(""),
