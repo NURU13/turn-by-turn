@@ -62,7 +62,7 @@
     <div id="tooltip"></div>
 
     <form id="form" onsubmit="try{directions()}catch(e){}; return false">
-      <p>Request directions from <a href="http://maps.google.com/" target="_blank">Google Maps</a>: they will be overlaid with a forecast from <a href="http://darkskyapp.com/" target="_blank">Dark Sky</a>, showing where (and how hard) you&rsquo;ll get rained on if you left right now.</p>
+      <p>Request directions from <a href="http://maps.google.com/" target="_blank">Google Maps</a>: they will be overlaid with a 60-minute forecast from <a href="http://darkskyapp.com/" target="_blank">Dark Sky</a>, showing where (and how hard) you&rsquo;ll get rained on if you left right now.</p>
 
       <table>
         <tr>
@@ -95,6 +95,10 @@
 
     <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
     <script type="text/javascript">
+      /* FIXME: Start on an interesting storm. */
+      /* FIXME: Make the default bounding box on the left side of the screen,
+       * so directions don't appear under the floating input form */
+
       function interpolate(path, t) {
         var i, l
 
@@ -209,8 +213,6 @@
         })
       }
 
-      /* FIXME: infowindows are crap. make our own tooltips that don't suck so
-       * bad. */
       function polyline(map, start, path, w, type, end) {
         var message = [],
             color
@@ -223,11 +225,11 @@
               case "sleet": message.push("Very light sleet "); break
               case "snow" : message.push("Dusting "); break
             }
-            color = "#FE0"
+            color = "#6F0"
             break
-          case 2: message.push("Light ", type); color = "#FA0"; break
-          case 3: message.push("Moderate ", type); color = "#F50"; break
-          case 4: message.push("Heavy ", type); color = "#F00"; break
+          case 2: message.push("Light ", type); color = "#FE0"; break
+          case 3: message.push("Moderate ", type); color = "#F90"; break
+          case 4: message.push("Heavy ", type); color = "#F30"; break
         }
 
         if(start === 0 && end)
@@ -327,7 +329,7 @@
               overlays.push(new google.maps.Marker({
                 map: map,
                 position: positions[positions.length - 1].position,
-                title: "End of Forecast"
+                title: "End of 60-Minute Forecast"
               }))
 
             polyline(map, positions.length - path.length, path, pc, positions[positions.length - 1].type, true)
