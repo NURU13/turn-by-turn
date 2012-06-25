@@ -108,6 +108,8 @@
         margin: 10px 0;
         }
     </style>
+    
+    <script src="jquery.js"></script>
   </head>
 
   <body>
@@ -233,22 +235,7 @@
 
         return out
       }
-
-      function json(url, callback) {
-        var req = new XMLHttpRequest()
-        req.open("GET", url, true)
-        req.onreadystatechange = function() {
-          if(req.readyState !== 4)
-            return
-
-          if(req.status !== 200)
-            return callback(new Error("Received a non-200 response from the server (" + req.status + ")."))
-
-          return callback(null, JSON.parse(req.responseText))
-        }
-        req.send(null)
-      }
-
+      
       function forecast(positions, callback) {
         var url = ["/darksky/precipitation/"],
             i
@@ -261,11 +248,13 @@
           )
 
         url.pop()
-
-        return json(url.join(""), function(err, res) {
-          if(err)
-            return callback(err)
-
+        
+        $.ajax({
+          url: url.join(""),
+          dataType: 'json'
+        }).fail(function(err) {
+          callback(err)
+        }).done(function(res) {
           var i = res.precipitation.length
 
           while(i--) {
@@ -355,7 +344,7 @@
 
           renderer.setDirections(result)
 
-          var positions = extract(result.routes[0], Math.floor(Date.now() / 1000), 60, 3600)
+          var positions = extract(result.routes[0], Math.floor((new Date()).getTime() / 1000), 60, 3600)
 
           forecast(positions, function(err) {
             if(err)
@@ -400,10 +389,12 @@
       }
 
       function random(callback) {
-        return json("/darksky/interesting", function(err, res) {
-          if(err)
-            return callback(err)
-
+        $.ajax({
+          url: "/darksky/interesting",
+          dataType: 'json'
+        }).fail(function(err) {
+          callback(err)
+        }).done(function(res) {
           var storm = res.storms[0],
               center = new google.maps.LatLng(res.storms[0].latitude, res.storms[0].longitude),
               angle = Math.random() * 360,
@@ -459,8 +450,17 @@
           return attempt()
         }
       }
-
-      attempt()
+      
+      function kickoff() {
+        if(!google || !google.maps || !google.maps.geometry) {
+          setTimeout(kickoff, 250)
+          return
+        }
+        
+        attempt()
+      }
+      
+      kickoff()
     </script>
   </body>
 </html>
