@@ -333,7 +333,7 @@
         overlays.push(polyline)
       }
 
-      function directions() {
+      function directions(callback) {
         var mode
 
         switch(form.mode.value) {
@@ -347,10 +347,8 @@
           destination: form.to.value,
           travelMode: mode
         }, function(result, status) {
-          if(status !== google.maps.DirectionsStatus.OK) {
-            alert("I couldn't get directions from Google. Try again!")
-            return
-          }
+          if(status !== google.maps.DirectionsStatus.OK)
+            return callback(new Error("I couldn't get directions from Google. Sorry!"))
 
           while(overlays.length)
             overlays.pop().setMap(null)
@@ -360,10 +358,8 @@
           var positions = extract(result.routes[0], Math.floor(Date.now() / 1000), 60, 3600)
 
           forecast(positions, function(err) {
-            if(err) {
-              alert("I couldn't get a forecast from Dark Sky. Try again!")
-              return
-            }
+            if(err)
+              return callback(new Error("I couldn't get a forecast from Dark Sky. Sorry!"))
 
             var path = [],
                 pc = 0,
@@ -398,6 +394,7 @@
               }))
 
             polyline(map, positions.length - path.length, path, pc, positions[positions.length - 1].type, true)
+            return callback(null)
           })
         })
       }
@@ -434,14 +431,36 @@
             map: map
           }),
           service = new google.maps.DirectionsService(),
-          overlays = []
+          overlays = [],
+          retries = 10
 
       window.onmousemove = function(e) {
         tooltip.style.left = e.pageX + "px"
         tooltip.style.top  = e.pageY + "px"
       }
 
-      random(directions)
+      function attempt() {
+        return random(function(err) {
+          if(err)
+            return retry(err)
+
+          return directions(retry)
+        })
+      }
+
+      function retry(err) {
+        if(err) {
+          if(retries === 0) {
+            alert(err.message)
+            return
+          }
+
+          --retries
+          return attempt()
+        }
+      }
+
+      attempt()
     </script>
   </body>
 </html>
