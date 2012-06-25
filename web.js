@@ -3,7 +3,8 @@ var express = require("express"),
     request = require("request"),
     util = require("util"),
     app = express.createServer(),
-    key = process.argv[2]
+    key = process.argv[2],
+    port = parseInt(process.argv[3]) || 8080
 
 if(!key)
   throw "please provide an API key as a command line argument"
@@ -30,4 +31,4 @@ app.get("/darksky/precipitation/:locations", function(req, res) {
   ).pipe(res)
 })
 
-app.listen(8080, "127.0.0.1")
+app.listen(port, "127.0.0.1")
