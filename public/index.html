@@ -3,7 +3,7 @@
   <head>
     <title>Dark Sky: Weather Along a Traffic Route</title>
 
-    <style type="text/css">
+    <style>
       html {
         height: 100%;
       }
@@ -108,8 +108,6 @@
         margin: 10px 0;
         }
     </style>
-    
-    <script src="jquery.js"></script>
   </head>
 
   <body>
@@ -163,8 +161,10 @@
       </div>
     </div>
 
-    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
-    <script type="text/javascript">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/jquery-1.7.2.min.js"><\/script>')</script>
+    <script src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script>
       /* FIXME: Start on an interesting storm. */
 
       function interpolate(path, t) {
@@ -237,6 +237,8 @@
       }
       
       function forecast(positions, callback) {
+        var callback = callback || $.noop
+
         var url = ["/darksky/precipitation/"],
             i
 
@@ -325,7 +327,7 @@
       function directions(callback) {
         var mode
 
-        switch(form.mode.value) {
+        switch($("#form select").val()) {
           case "walk": mode = google.maps.TravelMode.WALKING; break
           case "bike": mode = google.maps.TravelMode.BICYCLING; break
           default:     mode = google.maps.TravelMode.DRIVING; break
@@ -383,7 +385,7 @@
               }))
 
             polyline(map, positions.length - path.length, path, pc, positions[positions.length - 1].type, true)
-            return callback(null)
+            // return callback(null)
           })
         })
       }
@@ -460,7 +462,7 @@
         attempt()
       }
       
-      kickoff()
+      $(window).load(kickoff)
     </script>
   </body>
 </html>
