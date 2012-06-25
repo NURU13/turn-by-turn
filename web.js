@@ -30,4 +30,4 @@ app.get("/darksky/precipitation/:locations", function(req, res) {
   ).pipe(res)
 })
 
-app.listen(8080)
+app.listen(8080, "127.0.0.1")
