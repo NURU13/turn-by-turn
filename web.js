@@ -8,8 +8,6 @@ var express = require("express"),
 if(!key)
   throw "please provide an API key as a command line argument"
 
-app.use(express.query())
-app.use(express.logger())
 app.use(app.router)
 app.use(express.static(path.join(__dirname, "public")))
 
