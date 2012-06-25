@@ -427,10 +427,10 @@
           overlays = [],
           retries = 10
 
-      window.onmousemove = function(e) {
+      $(window).mousemove(function(e) {
         tooltip.style.left = e.pageX + "px"
         tooltip.style.top  = e.pageY + "px"
-      }
+      })
 
       function attempt() {
         return random(function(err) {
