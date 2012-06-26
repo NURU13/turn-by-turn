@@ -9,7 +9,7 @@
       }
 
       body {
-        font: 300 75%/1.5em "Futura", "Helvetica", "Arial", sans-serif;
+        font: 300 87.5%/1.4em "Futura", "Helvetica", "Arial", sans-serif;
         height: 100%;
         margin: 0;
         background-color: rgb(244, 243, 240);
@@ -26,7 +26,7 @@
         right: 0;
         bottom: 0;
         left: 333px;
-        }
+      }
       
       #sidebar {
         position: absolute;
@@ -35,19 +35,17 @@
         bottom: 0;
         left: 0;
         width: 333px;
-        font-size: 14px;
         box-shadow: 2px 2px 25px rgba(0,0,0, 0.5);
-        }
+      }
       
       #sidebar > .inner {
         margin: 20px;
-        }
+      }
       
       #logo {
         width: 292px;
         height: 112px;
-        margin: 0 0 10px -5px;
-        }
+      }
       
       #key {
         position: absolute;
@@ -58,38 +56,33 @@
         right: 0;
         background-color: rgba(255, 255, 255, 0.75);
         box-shadow: -2px 2px 15px rgba(0,0,0, 0.35);
-        }
+      }
+
       #key img {
         display: inline-block;
         margin: 6px;
-        }
+      }
       
       #sidebar > .inner > p {
-        font-size: 16px;
-        line-height: 1.4em;
-        margin-bottom: 20px;
-        }
-      
-      #sidebar form {
-        font-size: 16px;
-        }
+        margin-bottom: 1.4em;
+      }
       
       form p {
-        margin: 0 0 1em;
-        }
+        margin: 0 0 1.4em;
+      }
 
       form table {
-        margin: 1em 0 0;
-        }
+        margin: 1.4em 0 0;
+      }
       
       form .input {
         width: 180px;
-        }
+      }
 
       th {
         font-weight: normal;
         text-align: right;
-        }
+      }
 
       div#tooltip {
         position: fixed;
@@ -99,14 +92,15 @@
         border: 1px solid gray;
         background: white;
         box-shadow: 0em 0.125em 0.25em gray;
+        font-size: 0.857em;
         white-space: nowrap;
         visibility: hidden;
-        }
+      }
       
       hr {
         opacity: 0.5;
-        margin: 10px 0;
-        }
+        margin: 1.4em 0;
+      }
     </style>
   </head>
 
@@ -122,8 +116,12 @@
     <div id="sidebar">
       <div class="inner">
         <img id="logo" src="logo.png" />
+
+        <hr/>
         
-        <p>Request directions from <a href="http://maps.google.com/" target="_blank">Google Maps</a>, and they will be overlaid with a 60-minute forecast from <a href="http://darkskyapp.com/" target="_blank">Dark Sky</a>, showing where (and how hard) you&rsquo;ll get rained on if you left right now.</p>
+        <p>Request directions from <a href="http://maps.google.com/" target="_blank">Google Maps</a> using the form below, and the first 60-minutes of your trip will be overlaid with a forecast from <a href="http://darkskyapp.com/" target="_blank">Dark Sky</a>, showing where (and how hard) you&rsquo;ll get rained on if you left right now.</p>
+
+        <p>Please note that this is just a small tech demo showcasing these two APIs; it lacks features, is not robust, and might behave erratically. Please do not rely on it!</p>
 
         <p>(You can type in addresses or cities, too; not just latitudes and longitudes!)</p>
         
